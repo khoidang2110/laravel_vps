@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+    container_name: laravel-app
+  
+    ports:
+      - "8000:8000"  # Port Laravel
+    networks:
+      - laravel-network  # Dùng mạng người dùng
+    #command: php artisan serve --host 0.0.0.0 --port 8000
+    command: >
+      sh -c "php artisan serve --host 0.0.0.0 --port 8000 &
+             sleep 30 &&
+             php artisan migrate &&
+             php artisan db:seed &&
+             tail -f /dev/null"
+  db:
+    image: mysql:8.0
+    container_name: "mysql-container"
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      # MYSQL_USER: ${DB_USERNAME}
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - ./docker-compose/mysql:/docker-entrypoint-initdb.d
+    networks:
+      - laravel-network
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-container
+    volumes:
+      - ./public:/usr/share/nginx/html  # Kết nối thư mục public của Laravel vào Nginx
+      -  ./docker-compose/nginx/nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "80:80"  # Để phục vụ các file tĩnh từ Vite
+    networks:
+      - laravel-network
+networks:
+  laravel-network:  # Mạng người dùng sẽ tự tạo
+    driver: bridge  # Dùng driver 'bridge' cho mạng người dùng  case 3nd time

@@ -1,0 +1,67 @@
+name: Deploy Laravel to VPS Docker
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Install sshpass
+      run: sudo apt-get update && sudo apt-get install -y sshpass
+
+    - name: Build and deploy Docker container with docker-compose
+      env:
+        VPS_IP: ${{ secrets.VPS_IP }}
+        VPS_USER: ${{ secrets.VPS_USER }}
+        PASS: ${{ secrets.PASS }}
+      run: |
+        # SSH into VPS
+        sshpass -p $PASS ssh -o StrictHostKeyChecking=no $VPS_USER@$VPS_IP << EOF
+
+          # Navigate to the home directory
+          cd /home/$VPS_USER || exit
+
+            # Stop existing containers and remove volumes
+          if [ -d "Library-management" ]; then
+            cd Library-management
+            docker compose down -v
+            cd ..
+          fi
+          
+          # Remove old directory
+          rm -rf Library-management
+          
+          # Clone the repository
+          git clone https://github.com/Quaniscoding/Library-management.git
+          
+          # Navigate to project directory
+          cd Library-management
+          
+          # Ensure Git safe directory
+          git config --global --add safe.directory /var/www
+          
+          # Stop any existing containers with the same names
+          docker compose down --remove-orphans
+          
+          # Remove existing containers and images
+          docker compose rm -f
+          docker image rm laravel-app:latest mysql:8.0 nginx:alpine || true
+          
+          # Build and start services
+          docker compose up -d --build --force-recreate
+          
+          # Clean up unused images and volumes
+          docker system prune -af
+          docker volume prune -f
+          
+        EOF
