@@ -16,6 +16,7 @@ services:
              sleep 30 &&
              php artisan migrate &&
              php artisan db:seed &&
+             php artisan storage:link &&
              tail -f /dev/null"
   db:
     image: mysql:8.0
@@ -30,6 +31,8 @@ services:
       SERVICE_NAME: mysql
     volumes:
       - ./docker-compose/mysql:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
     networks:
       - laravel-network
   nginx:
@@ -44,4 +47,4 @@ services:
       - laravel-network
 networks:
   laravel-network:  # Mạng người dùng sẽ tự tạo
-    driver: bridge  # Dùng driver 'bridge' cho mạng người dùng  case 3nd time
+    driver: bridge  # Dùng driver 'bridge' cho mạng người dùng  case 2nd

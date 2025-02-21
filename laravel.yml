@@ -34,7 +34,7 @@ jobs:
             # Stop existing containers and remove volumes
           if [ -d "Library-management" ]; then
             cd Library-management
-            docker compose down -v
+            docker-compose down -v
             cd ..
           fi
           
@@ -50,15 +50,14 @@ jobs:
           # Ensure Git safe directory
           git config --global --add safe.directory /var/www
           
-          # Stop any existing containers with the same names
-          docker compose down --remove-orphans
+         
           
           # Remove existing containers and images
-          docker compose rm -f
+          docker-compose rm -f
           docker image rm laravel-app:latest mysql:8.0 nginx:alpine || true
           
           # Build and start services
-          docker compose up -d --build --force-recreate
+          docker-compose up -d --build --force-recreate
           
           # Clean up unused images and volumes
           docker system prune -af
